@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yoursite.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="Logistic Regression with Group LassoLogistic RegressionFor linear regression, we need to solve problem $X \cdot \theta&#x3D;b $, which is not suitable for binary classification problem. So we use the sigmo">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Logistic Regression with Group Lasso">
+<meta property="og:url" content="http://yoursite.com/2020/05/18/Logistic-Regression-with-Group-Lasso/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="Logistic Regression with Group LassoLogistic RegressionFor linear regression, we need to solve problem $X \cdot \theta&#x3D;b $, which is not suitable for binary classification problem. So we use the sigmo">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2020-05-18T17:55:08.000Z">
+<meta property="article:modified_time" content="2020-05-18T17:56:05.202Z">
+<meta property="article:author" content="John Doe">
+<meta property="article:tag" content="Model">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://yoursite.com/2020/05/18/Logistic-Regression-with-Group-Lasso/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>Logistic Regression with Group Lasso | Hexo</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Hexo</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/18/Logistic-Regression-with-Group-Lasso/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="John Doe">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Logistic Regression with Group Lasso
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2020-05-18 13:55:08 / Modified: 13:56:05" itemprop="dateCreated datePublished" datetime="2020-05-18T13:55:08-04:00">2020-05-18</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Logistic-Regression-with-Group-Lasso"><a href="#Logistic-Regression-with-Group-Lasso" class="headerlink" title="Logistic Regression with Group Lasso"></a>Logistic Regression with Group Lasso</h1><h2 id="Logistic-Regression"><a href="#Logistic-Regression" class="headerlink" title="Logistic Regression"></a>Logistic Regression</h2><p>For linear regression, we need to solve problem $X \cdot \theta=b $, which is not suitable for binary classification problem. So we use the sigmoid function $h_{\theta}(x)=\frac{1}{1+\exp \left(-\theta^{\top} x\right)}$ to represent probability since $h_{\theta}(x) \in (0,1)$ . Under this setting, the function we want to learn has the form<br>$$<br>\begin{equation}<br>\begin{array}{l}{P(y=1 | x)=h_{\theta}(x)=\frac{1}{1+\exp \left(-\theta^{\top} x\right)} } \ {P(y=0 | x)=1-P(y=1 | x)=1-h_{\theta}(x)}\end{array}<br>\end{equation}<br>$$<br>where $\theta$ is the variable we want to learn, y is the label of classes, x is the observation.</p>
+<p>The goal is to maximum the log-likelihood function<br>$$<br>\begin{equation}<br>\sum_{i}\left(y^{(i)} \log \left(h_{\theta}\left(x^{(i)}\right)\right)+\left(1-y^{(i)}\right) \log \left(1-h_{\theta}\left(x^{(i)}\right)\right)\right)<br>\end{equation}<br>$$<br>To make this function convex, add minus in front of the function and the problem can be written as<br>$$<br>\min_{\theta} f(\theta) =\min_{\theta} -\sum_{i}\left(y^{(i)} \log \left(h_{\theta}\left(x^{(i)}\right)\right)+\left(1-y^{(i)}\right) \log \left(1-h_{\theta}\left(x^{(i)}\right)\right)\right)<br>$$<br>Also the lost function $f(\theta)$ can be simplified as(omit the notation of I and x and summation)<br>$$<br>\begin{align<em>}<br>-f(\theta) &amp;= y\log(h_{\theta})+(1-y)\log(1-h_{\theta}) \<br>&amp;= y(\log(h_{\theta})-\log(1-h_{\theta}))+\log(1-h_{\theta}) \<br>&amp;=y\log(\frac{h_{\theta}}{1-h_{\theta}})+\log(1-h_{\theta}) \<br>&amp;=y\log(e^{\theta^Tx})+\log(\frac{e^{-\theta^Tx}}{1+e^{-\theta^Tx}}) \<br>&amp;=y\cdot \theta^Tx -\log(e^{\theta^Tx}+1) \<br>\<br>f(\theta)&amp;= \log(e^{\theta^Tx}+1)-y\cdot \theta^Tx<br>\end{align</em>}<br>$$<br>Notice that the interception is included in $\theta$ , that is $\theta^T x \equiv \theta_0+\theta^T x$ </p>
+<p>the gradient of lost function is (still omit summation and notation of i)<br>$$<br>\nabla_{\theta}f(\theta)= x\frac{e^{\theta^Tx}}{1+e^{\theta^Tx}}-x y\<br>=x\left(\frac{1}{1+e^{-\theta^Tx}}-y \right)\<br>=x(h_{\theta}(x)-y)<br>$$</p>
+<h2 id="Group-Lasso-l-1-2-norm"><a href="#Group-Lasso-l-1-2-norm" class="headerlink" title="Group Lasso($l_{1,2}$ norm)"></a>Group Lasso($l_{1,2}$ norm)</h2><p>To prevent overfitting, we can add some penalty to the lost function. When the penalty is the summation of $l_2$ -norm the problem is called group lasso.<br>$$<br>g(\theta)=\sum_{g\in G}w_g \Vert \theta_g\Vert_2<br>$$<br>Where $w_g$ is the weight and $\theta_g$ is a small group of elements of $\theta$.</p>
+<p>The group lasso will induce sparsity structure of learned parameter and the elements in the same group are intended to be selected or omitted at the same time. </p>
+<p>Our problem can be written as<br>$$<br>\begin{align<em>}<br>F(\theta)&amp;=f(\theta)+\lambda g(\theta) \<br>&amp;=\sum_i\left[ \log(e^{\theta^Tx^i}+1)-y^i\cdot \theta^Tx^i \right] +\lambda\sum_{g\in G}w_g \Vert \theta_g\Vert_2<br>\end{align</em>}<br>$$<br>The parameter $\lambda$ controls the sparsity of fitting variable. In this problem, we can deduce the maximum of $\lambda$ beyond with $\theta=0$ will be the minimizer of our objective function.</p>
+<h3 id="Calculate-lambda-max"><a href="#Calculate-lambda-max" class="headerlink" title="Calculate $\lambda_{max}$"></a>Calculate $\lambda_{max}$</h3><p>If $\theta=0$ minimizes $F(\theta)$, apply the first-order optimality condition</p>
+<p>The partial derivative of $F(\theta)$ is<br>$$<br>\frac{\partial}{\partial \theta_g}F(\theta)= \sum_i x_g^i (h_\theta(x^i)  -y^i) +\lambda w_g \partial \Vert \theta_g \Vert_2\<br>$$<br>If all elements of $\theta$ is zero, the partial derivative is<br>$$<br>\sum_i x_g^i (\frac{1}{1+e^{-\theta_0}} -y^i) +\lambda w_g \partial \Vert \theta_g \Vert_2 =0\<br>\sum_i x_g^i (\frac{1}{1+e^{-\theta_0}} -y^i) =-\lambda w_g \partial \Vert \theta_g \Vert_2\<br>$$<br>Where<br>$$<br>\frac{1}{1+e^{-\theta_0}} = P(y=1|x \in R^n)=P(y=1)=E[y]<br>$$<br>The last equation holds because $y\in {0,1}$</p>
+<p>Take norm on both sides<br>$$<br>\Vert \sum_i x_g ^i(E[y] -y^i) \Vert =\lambda w_g \Vert\partial \Vert  \leq \lambda w_g \<br>\lambda \ge \Vert \sum_i  x_g ^i(E[y] -y^i) \Vert /w_g<br>$$<br>So the max $\lambda$ can be chosen among all groups[^Meier].<br>$$<br>\lambda_{\max}=\max_g \Vert \sum_i x_g^i (E[y] -y^i) \Vert /w_g<br>$$</p>
+<p>[^Meier]: Meier, Lukas, Sara Van De Geer, and Peter Bühlmann. “The group lasso for logistic regression.” <em>Journal of the Royal Statistical Society: Series B (Statistical Methodology)</em> 70, no. 1 (2008): 53-71.Harvard </p>
+<h2 id="ISTA-BC"><a href="#ISTA-BC" class="headerlink" title="ISTA-BC"></a>ISTA-BC</h2><h3 id="ISTA-Beck"><a href="#ISTA-Beck" class="headerlink" title="ISTA[^Beck]"></a>ISTA[^Beck]</h3><p>[^Beck]: Beck, Amir, and Marc Teboulle. “A fast iterative shrinkage-thresholding algorithm for linear inverse problems.” <em>SIAM journal on imaging sciences</em> 2, no. 1 (2009): 183-202.</p>
+<p>For problem has the structure<br>$$<br>\min F(x)=f(x)+g(x)<br>$$<br>Where $f(x)$ is convex and Lipschitz continuous, $g(x)$ is convex but non-smooth.</p>
+<p>$f(x)$ Can be approximated by a quadratic function so that the iterative scheme can be written as<br>$$<br>x^k=\arg\min_x \left{f(x^{k-1})+\nabla f(x^{k-1})^T(x-x^{k-1})+\frac{1}{2t^k}\Vert x-x^{k-1}\Vert^2+g(x) \right} \<br>=\arg\min_x \left{  \frac{1}{2t^k} \Vert x-(x^{k-1}-t^k \nabla f(x^{k-1}) \Vert^2)+g(x) \right}<br>$$<br>Which is a proximal operator and can be calculated easily when $g(x)$ has some specific structure.</p>
+<p>For our problem, replace $\theta$ with $x$ for convenience notation, and let $A$ denotes the observation $x$, the ISTA or proximal gradient method is implement as<br>$$<br>x^k=\arg\min_x \left{\sum_g \frac{1}{2t^k}\Vert x_g - (x^{k-1}<em>g-t^{k}\nabla_gf(x^{k-1}) \Vert^2+\lambda\Vert x_g\Vert \right } \<br>x^k_g = v_g\left(1-\frac{\lambda t^k}{\Vert v_g\Vert}\right)</em>+ =\frac{v_g}{\Vert v_g\Vert}(\Vert v_g \Vert-\lambda t^k)_+<br>$$<br>Where $ v_g=x^{k-1}_g-t^{k}\nabla_gf(x^{k-1})$</p>
+<p>$t^k$ Is a approximation of Hessian and can be determined by line search so that the value at new point is smaller than the approximation function.<br>$$<br>F(x^{k})\le f(x^{k-1})+\nabla f(x^{k-1})^T(x^k-x^{k-1})+\frac{1}{2t^k}\Vert x^k-x^{k-1}\Vert^2+g(x^k)<br>$$</p>
+<h3 id="ISTA-BC-1"><a href="#ISTA-BC-1" class="headerlink" title="ISTA-BC"></a>ISTA-BC</h3><p>Instead of updating all elements in x at the same time, one may only updates a single group in an iteration. The block coordinate step can be written as<br>$$<br>x^k_g=\arg\min_{x_g} \left{f(x^{k-1})+\nabla_g f(x^{k-1})^T(x_g-x_g^{k-1})+\frac{1}{2t_g^k}\Vert x_g-x_g^{k-1}\Vert^2+ \lambda \Vert x_g \Vert) \right} \<br>=\arg\min_{x_g} \left{  \frac{1}{2t_g^k} \Vert x_g-(x_g^{k-1}-t_g^k \nabla_g f(x^{k-1}) \Vert^2)+\lambda \Vert x_g \Vert) \right}<br>$$<br>$x_g$  Is updated while keeping all other elements fixed. And the whole new $x$ is denoted by $x^k$.</p>
+<p>Also backtracking line-search is used to determine step size  $t_g^k$ , which satisfies<br>$$<br>F(x^{k})\le f(x^{k-1})+\nabla_g f(x^{k-1})^T(x_g^k-x_g^{k-1})+\frac{1}{2t_g^k}\Vert x_g^k-x_g^{k-1}\Vert^2+\lambda \Vert x^{k-1} \Vert<br>$$<br>In Qin’s paper [^qin] , the line-search is<br>$$<br>f(x^k) \le f(x^{k-1})+\nabla_g f(x^{k-1})^T(x_g^k-x_g^{k-1})+\frac{1}{2t_g^k}\Vert x_g^k-x_g^{k-1}\Vert^2<br>$$<br>The penalty part $g(x)$ is ignored in their method.</p>
+<p>[^qin]: Qin, Zhiwei, Katya Scheinberg, and Donald Goldfarb. “Efficient block-coordinate descent algorithms for the group lasso.” <em>Mathematical Programming Computation</em> 5, no. 2 (2013): 143-169.Harvard </p>
+<h2 id="Implementation"><a href="#Implementation" class="headerlink" title="Implementation"></a>Implementation</h2><ul>
+<li><p>$A \in R^{m\times n+1}$ Is observation, where m is number of samples and n is number of variables, each row is one sample. An extra column of 1’s is added to the first column to include interception</p>
+</li>
+<li><p>$y\in R^m$ And $y\in {0,1 } $ is label of classes</p>
+</li>
+<li><p>$x\in R^{n+1}$ Is the learned coefficient. Add one column to represent interception $x_0$</p>
+</li>
+</ul>
+<p>$h_\theta(x)$ Under these notations combined with vector representation is adjusted as<br>$$<br>h_x(A)= \frac{1}{1+exp(-Ax)} \in R^m<br>$$</p>
+<p>$$<br>f(x) =\text{ones(1,m) }\log(\exp(Ax)+1) - y^TAx  \<br>\nabla f(x) = A^T(h_x(A)-y) \in R^{n+1}<br>$$</p>
+<p>Let $x^k = x^{k-1}+x_g$ where $x_g$ is vector only g-th group are not zero, then the new $Ax^k = Ax^{k-1}+A_gx_g$ where $A_g$ only contain columns has same index with $x_g$. This function will reduce matrix calculation in line-search.</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Model/" rel="tag"># Model</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/05/18/hello-world/" rel="prev" title="Hello World">
+      <i class="fa fa-chevron-left"></i> Hello World
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Logistic-Regression-with-Group-Lasso"><span class="nav-number">1.</span> <span class="nav-text">Logistic Regression with Group Lasso</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Logistic-Regression"><span class="nav-number">1.1.</span> <span class="nav-text">Logistic Regression</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Group-Lasso-l-1-2-norm"><span class="nav-number">1.2.</span> <span class="nav-text">Group Lasso($l_{1,2}$ norm)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Calculate-lambda-max"><span class="nav-number">1.2.1.</span> <span class="nav-text">Calculate $\lambda_{max}$</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ISTA-BC"><span class="nav-number">1.3.</span> <span class="nav-text">ISTA-BC</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ISTA-Beck"><span class="nav-number">1.3.1.</span> <span class="nav-text">ISTA[^Beck]</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ISTA-BC-1"><span class="nav-number">1.3.2.</span> <span class="nav-text">ISTA-BC</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Implementation"><span class="nav-number">1.4.</span> <span class="nav-text">Implementation</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">John Doe</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">2</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">tags</span>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">John Doe</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>
