@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title>Logistic Regression with Group Lasso</title>
+    <url>/2020/05/18/Logistic-Regression-with-Group-Lasso/</url>
+    <content><![CDATA[<h2 id="Logistic-Regression"><a href="#Logistic-Regression" class="headerlink" title="Logistic Regression"></a>Logistic Regression</h2><a id="more"></a>
+<p>For linear regression, we need to solve problem $X \cdot \theta=b $, which is not suitable for binary classification problem. So we use the sigmoid function $h_{\theta}(x)=\frac{1}{1+\exp \left(-\theta^{\top} x\right)}$ to represent probability since $ h_{ \theta}(x) \in (0,1) $ . Under this setting, the function we want to learn has the form</p>
+<script type="math/tex; mode=display">
+\begin{equation}
+\begin{array}{l}{P(y=1 | x)=h_{\theta}(x)=\frac{1}{1+\exp \left(-\theta^{\top} x\right)} } \\ {P(y=0 | x)=1-P(y=1 | x)=1-h_{\theta}(x)}\end{array}
+\end{equation}</script><p>where $\theta$ is the variable we want to learn, y is the label of classes, x is the observation.</p>
+<p>The goal is to maximum the log-likelihood function </p>
+<script type="math/tex; mode=display">
+\begin{equation}
+\sum_{i}\left(y^{(i)} \log \left(h_{\theta}\left(x^{(i)}\right)\right)+\left(1-y^{(i)}\right) \log \left(1-h_{\theta}\left(x^{(i)}\right)\right)\right)
+\end{equation}</script><p>To make this function convex, add minus in front of the function and the problem can be written as </p>
+<script type="math/tex; mode=display">
+\min_{\theta} f(\theta) =\min_{\theta} -\sum_{i}\left(y^{(i)} \log \left(h_{\theta}\left(x^{(i)}\right)\right)+\left(1-y^{(i)}\right) \log \left(1-h_{\theta}\left(x^{(i)}\right)\right)\right)</script><p>Also the lost function $f(\theta)$ can be simplified as(omit the notation of I and x and summation)</p>
+<script type="math/tex; mode=display">
+\begin{align*}
+-f(\theta) &= y\log(h_{\theta})+(1-y)\log(1-h_{\theta}) \\
+&= y(\log(h_{\theta})-\log(1-h_{\theta}))+\log(1-h_{\theta}) \\
+&=y\log(\frac{h_{\theta}}{1-h_{\theta}})+\log(1-h_{\theta}) \\
+&=y\log(e^{\theta^Tx})+\log(\frac{e^{-\theta^Tx}}{1+e^{-\theta^Tx}}) \\
+&=y\cdot \theta^Tx -\log(e^{\theta^Tx}+1) \\
+\\
+f(\theta)&= \log(e^{\theta^Tx}+1)-y\cdot \theta^Tx
+\end{align*}</script><p>Notice that the interception is included in $\theta$ , that is $\theta^T x \equiv \theta_0+\theta^T x$ </p>
+<p>the gradient of lost function is (still omit summation and notation of i)</p>
+<script type="math/tex; mode=display">
+\nabla_{\theta}f(\theta)= x\frac{e^{\theta^Tx}}{1+e^{\theta^Tx}}-x y\\
+=x\left(\frac{1}{1+e^{-\theta^Tx}}-y \right)\\
+=x(h_{\theta}(x)-y)</script><h2 id="Group-Lasso-l-1-2-norm"><a href="#Group-Lasso-l-1-2-norm" class="headerlink" title="Group Lasso($l_{1,2}$ norm)"></a>Group Lasso($l_{1,2}$ norm)</h2><p>To prevent overfitting, we can add some penalty to the lost function. When the penalty is the summation of $l_2$ -norm the problem is called group lasso. </p>
+<script type="math/tex; mode=display">
+g(\theta)=\sum_{g\in G}w_g \Vert \theta_g\Vert_2</script><p>Where $w_g$ is the weight and $\theta_g$ is a small group of elements of $\theta$.</p>
+<p>The group lasso will induce sparsity structure of learned parameter and the elements in the same group are intended to be selected or omitted at the same time. </p>
+<p>Our problem can be written as </p>
+<script type="math/tex; mode=display">
+\begin{align*}
+F(\theta)&=f(\theta)+\lambda g(\theta) \\
+&=\sum_i\left[ \log(e^{\theta^Tx^i}+1)-y^i\cdot \theta^Tx^i \right] +\lambda\sum_{g\in G}w_g \Vert \theta_g\Vert_2
+\end{align*}</script><p>The parameter $\lambda$ controls the sparsity of fitting variable. In this problem, we can deduce the maximum of $\lambda$ beyond with $\theta=0$ will be the minimizer of our objective function.</p>
+<h3 id="Calculate-lambda-max"><a href="#Calculate-lambda-max" class="headerlink" title="Calculate $\lambda_{max}$"></a>Calculate $\lambda_{max}$</h3><p>If $\theta=0$ minimizes $F(\theta)$, apply the first-order optimality condition</p>
+<p>The partial derivative of $F(\theta)$ is</p>
+<script type="math/tex; mode=display">
+\frac{\partial}{\partial \theta_g}F(\theta)= \sum_i x_g^i (h_\theta(x^i)  -y^i) +\lambda w_g \partial \Vert \theta_g \Vert_2\\</script><p>If all elements of $\theta$ is zero, the partial derivative is</p>
+<script type="math/tex; mode=display">
+\sum_i x_g^i (\frac{1}{1+e^{-\theta_0}} -y^i) +\lambda w_g \partial \Vert \theta_g \Vert_2 =0\\
+\sum_i x_g^i (\frac{1}{1+e^{-\theta_0}} -y^i) =-\lambda w_g \partial \Vert \theta_g \Vert_2\\</script><p>Where </p>
+<script type="math/tex; mode=display">
+\frac{1}{1+e^{-\theta_0}} = P(y=1|x \in R^n)=P(y=1)=E[y]</script><p>The last equation holds because $y\in \{0,1\}$</p>
+<p>Take norm on both sides</p>
+<script type="math/tex; mode=display">
+\Vert \sum_i x_g ^i(E[y] -y^i) \Vert =\lambda w_g \Vert\partial \Vert  \leq \lambda w_g \\
+\lambda \ge \Vert \sum_i  x_g ^i(E[y] -y^i) \Vert /w_g</script><p>So the max $\lambda$ can be chosen among all groups<sup><a href="#fn_Meier" id="reffn_Meier">Meier</a></sup>.</p>
+<script type="math/tex; mode=display">
+\lambda_{\max}=\max_g \Vert \sum_i x_g^i (E[y] -y^i) \Vert /w_g</script><blockquote id="fn_Meier">
+<sup>Meier</sup>. Meier, Lukas, Sara Van De Geer, and Peter Bühlmann. “The group lasso for logistic regression.” <em>Journal of the Royal Statistical Society: Series B (Statistical Methodology)</em> 70, no. 1 (2008): 53-71.Harvard <a href="#reffn_Meier" title="Jump back to footnote [Meier] in the text."> &#8617;</a>
+</blockquote>
+<h2 id="ISTA-BC"><a href="#ISTA-BC" class="headerlink" title="ISTA-BC"></a>ISTA-BC</h2><h3 id="ISTABeck"><a href="#ISTABeck" class="headerlink" title="ISTABeck"></a>ISTA<sup><a href="#fn_Beck" id="reffn_Beck">Beck</a></sup></h3><blockquote id="fn_Beck">
+<sup>Beck</sup>. Beck, Amir, and Marc Teboulle. “A fast iterative shrinkage-thresholding algorithm for linear inverse problems.” <em>SIAM journal on imaging sciences</em> 2, no. 1 (2009): 183-202.<a href="#reffn_Beck" title="Jump back to footnote [Beck] in the text."> &#8617;</a>
+</blockquote>
+<p>For problem has the structure</p>
+<script type="math/tex; mode=display">
+\min F(x)=f(x)+g(x)</script><p>Where $f(x)$ is convex and Lipschitz continuous, $g(x)$ is convex but non-smooth.</p>
+<p>$f(x)$ Can be approximated by a quadratic function so that the iterative scheme can be written as </p>
+<script type="math/tex; mode=display">
+x^k=\arg\min_x \left\{f(x^{k-1})+\nabla f(x^{k-1})^T(x-x^{k-1})+\frac{1}{2t^k}\Vert x-x^{k-1}\Vert^2+g(x) \right\} \\
+=\arg\min_x \left\{  \frac{1}{2t^k} \Vert x-(x^{k-1}-t^k \nabla f(x^{k-1}) \Vert^2)+g(x) \right\}</script><p>Which is a proximal operator and can be calculated easily when $g(x)$ has some specific structure.</p>
+<p>For our problem, replace $\theta$ with $x$ for convenience notation, and let $A$ denotes the observation $x$, the ISTA or proximal gradient method is implement as</p>
+<script type="math/tex; mode=display">
+x^k=\arg\min_x \left\{\sum_g \frac{1}{2t^k}\Vert x_g - (x^{k-1}_g-t^{k}\nabla_gf(x^{k-1}) \Vert^2+\lambda\Vert x_g\Vert \right \} \\
+x^k_g = v_g\left(1-\frac{\lambda t^k}{\Vert v_g\Vert}\right)_+ =\frac{v_g}{\Vert v_g\Vert}(\Vert v_g \Vert-\lambda t^k)_+</script><p>Where $ v_g=x^{k-1}_g-t^{k}\nabla_gf(x^{k-1})$</p>
+<p>$t^k$ Is a approximation of Hessian and can be determined by line search so that the value at new point is smaller than the approximation function.</p>
+<script type="math/tex; mode=display">
+F(x^{k})\le f(x^{k-1})+\nabla f(x^{k-1})^T(x^k-x^{k-1})+\frac{1}{2t^k}\Vert x^k-x^{k-1}\Vert^2+g(x^k)</script><h3 id="ISTA-BC-1"><a href="#ISTA-BC-1" class="headerlink" title="ISTA-BC"></a>ISTA-BC</h3><p>Instead of updating all elements in x at the same time, one may only updates a single group in an iteration. The block coordinate step can be written as</p>
+<script type="math/tex; mode=display">
+x^k_g=\arg\min_{x_g} \left\{f(x^{k-1})+\nabla_g f(x^{k-1})^T(x_g-x_g^{k-1})+\frac{1}{2t_g^k}\Vert x_g-x_g^{k-1}\Vert^2+ \lambda \Vert x_g \Vert) \right\} \\
+=\arg\min_{x_g} \left\{  \frac{1}{2t_g^k} \Vert x_g-(x_g^{k-1}-t_g^k \nabla_g f(x^{k-1}) \Vert^2)+\lambda \Vert x_g \Vert) \right\}</script><p>$x_g$  Is updated while keeping all other elements fixed. And the whole new $x$ is denoted by $x^k$.</p>
+<p>Also backtracking line-search is used to determine step size  $t_g^k$ , which satisfies</p>
+<script type="math/tex; mode=display">
+F(x^{k})\le f(x^{k-1})+\nabla_g f(x^{k-1})^T(x_g^k-x_g^{k-1})+\frac{1}{2t_g^k}\Vert x_g^k-x_g^{k-1}\Vert^2+\lambda \Vert x^{k-1} \Vert</script><p>In Qin’s paper <sup><a href="#fn_qin" id="reffn_qin">qin</a></sup> , the line-search is </p>
+<script type="math/tex; mode=display">
+f(x^k) \le f(x^{k-1})+\nabla_g f(x^{k-1})^T(x_g^k-x_g^{k-1})+\frac{1}{2t_g^k}\Vert x_g^k-x_g^{k-1}\Vert^2</script><p>The penalty part $g(x)$ is ignored in their method.</p>
+<blockquote id="fn_qin">
+<sup>qin</sup>. Qin, Zhiwei, Katya Scheinberg, and Donald Goldfarb. “Efficient block-coordinate descent algorithms for the group lasso.” <em>Mathematical Programming Computation</em> 5, no. 2 (2013): 143-169.Harvard <a href="#reffn_qin" title="Jump back to footnote [qin] in the text."> &#8617;</a>
+</blockquote>
+<h2 id="Implementation"><a href="#Implementation" class="headerlink" title="Implementation"></a>Implementation</h2><ul>
+<li><p>$A \in R^{m\times n+1}$ Is observation, where m is number of samples and n is number of variables, each row is one sample. An extra column of 1’s is added to the first column to include interception</p>
+</li>
+<li><p>$y\in R^m$ And $y\in \{0,1 \} $ is label of classes</p>
+</li>
+<li><p>$x\in R^{n+1}$ Is the learned coefficient. Add one column to represent interception $x_0$</p>
+</li>
+</ul>
+<p>$h_\theta(x)$ Under these notations combined with vector representation is adjusted as</p>
+<script type="math/tex; mode=display">
+h_x(A)= \frac{1}{1+exp(-Ax)} \in R^m</script><script type="math/tex; mode=display">
+f(x) =\text{ones(1,m) }\log(\exp(Ax)+1) - y^TAx  \\
+\nabla f(x) = A^T(h_x(A)-y) \in R^{n+1}</script><p>Let $x^k = x^{k-1}+x_g$ where $x_g$ is vector only g-th group are not zero, then the new $Ax^k = Ax^{k-1}+A_gx_g$ where $A_g$ only contain columns has same index with $x_g$. This function will reduce matrix calculation in line-search.</p>
+]]></content>
+      <categories>
+        <category>Model</category>
+      </categories>
+      <tags>
+        <tag>Machine Learning</tag>
+      </tags>
+  </entry>
+</search>
